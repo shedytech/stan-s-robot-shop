@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user
+  namespace: robot-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user
+  template:
+    metadata:
+      labels:
+        app: user
+    spec:
+      containers:
+      - name: user
+        image: shedyvince29/robotshop:user
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: "mongodb"
+        - name: REDIS_HOST
+          value: "redis"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "200m"
+          limits:
+            memory: "256Mi"
+            cpu: "400m"
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user
+  namespace: robot-shop
+spec:
+  selector:
+    app: user
+  ports:
+  - port: 8080
+    targetPort: 8080
