@@ -13,27 +13,43 @@ spec:
       labels:
         app: dispatch
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - desktop-worker
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: rabbitmq
+              topologyKey: kubernetes.io/hostname
       containers:
       - name: dispatch
         image: shedyvince29/robotshop:dispatch
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
         - name: RABBITMQ_HOST
           value: "rabbitmq"
-        - name: INSTANA_SERVICE_NAME
-          value: "dispatch"
+        - name: RABBITMQ_PORT
+          value: "5672"
         livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 15
+          exec:
+            command: ["pidof", "dispatch"]
+          initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 5
+          exec:
+            command: ["pidof", "dispatch"]
+          initialDelaySeconds: 10
           periodSeconds: 5
         resources:
           limits:
@@ -42,6 +58,8 @@ spec:
           requests:
             cpu: "200m"
             memory: "256Mi"
+      imagePullSecrets:
+      - name: regcred
 ---
 apiVersion: v1
 kind: Service
@@ -54,4 +72,3 @@ spec:
   ports:
   - port: 8080
     targetPort: 8080
-
